@@ -23,18 +23,12 @@ jobs:
       
     # Setup build environment
     - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1
+      uses: microsoft/setup-msbuild@v2
       
     - name: Install Visual Studio 2022 dependencies
       run: |
-        choco install visualstudio2022-workload-manageddesktop -y
-        if ($LASTEXITCODE -ne 0) { exit 1 }
         
-        choco install visualstudio2022-workload-nativedesktop -y
-        if ($LASTEXITCODE -ne 0) { exit 1 }
         
-        choco install visualstudio2022-workload-vctools -y
-        if ($LASTEXITCODE -ne 0) { exit 1 }
         
         choco install windowsdriverkit11 -y
         if ($LASTEXITCODE -ne 0) { exit 1 }
@@ -165,18 +159,12 @@ jobs:
       
     # Setup build environment
     - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1
+      uses: microsoft/setup-msbuild@v2
       
     - name: Install Visual Studio 2022 dependencies
       run: |
-        choco install visualstudio2022-workload-manageddesktop -y
-        if ($LASTEXITCODE -ne 0) { exit 1 }
         
-        choco install visualstudio2022-workload-nativedesktop -y
-        if ($LASTEXITCODE -ne 0) { exit 1 }
         
-        choco install visualstudio2022-workload-vctools -y
-        if ($LASTEXITCODE -ne 0) { exit 1 }
         
         choco install windowsdriverkit11 -y
         if ($LASTEXITCODE -ne 0) { exit 1 }
