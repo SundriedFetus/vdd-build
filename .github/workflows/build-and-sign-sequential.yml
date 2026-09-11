@@ -15,7 +15,7 @@ env:
 jobs:
   # Job 1: Build ARM64 VDD and Control Panel only (skip VAD due to WDK ARM64 issues)
   build-arm64:
-    runs-on: windows-latest
+    runs-on: windows-2022
     
     steps:
     - name: Checkout code
@@ -151,7 +151,7 @@ jobs:
   # Job 2: Build x64 components (VDD + VAD) - depends on ARM64 completion
   build-x64:
     needs: build-arm64
-    runs-on: windows-latest
+    runs-on: windows-2022
     
     steps:
     - name: Checkout code
