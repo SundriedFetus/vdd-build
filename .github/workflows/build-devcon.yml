@@ -1,0 +1,33 @@
+name: Build DevCon x64
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'tools/devcon-src/**'
+      - '.github/workflows/build-devcon.yml'
+
+jobs:
+  build-devcon-x64:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build DevCon (Release x64, plain v143 toolset)
+        shell: cmd
+        run: msbuild tools\devcon-src\devcon.vcxproj /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143 /p:WindowsTargetPlatformVersion=10.0 /m
+
+      - name: Upload DevCon artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: devcon-x64
+          path: |
+            tools/devcon-src/x64/Release/devcon.exe
+            tools/devcon-src/x64/Release/devcon.pdb
+          retention-days: 3
+          if-no-files-found: error
