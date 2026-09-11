@@ -35,8 +35,9 @@ jobs:
         Invoke-WebRequest -Uri 'https://www.nuget.org/api/v2/package/Microsoft.Windows.WDK.x64/10.0.26100.6584' -OutFile "$env:TEMP\wdk.nupkg"
         Expand-Archive "$env:TEMP\sdk.nupkg" -DestinationPath "$env:TEMP\sdkx" -Force
         Expand-Archive "$env:TEMP\wdk.nupkg" -DestinationPath "$env:TEMP\wdkroot" -Force
-        Copy-Item "$env:TEMP\sdkx\c\*" "$env:TEMP\wdkroot\c\" -Recurse -Force
-        if (-not ((Test-Path "$env:TEMP\wdkroot\c\Include\10.0.26100.0\shared") -and (Test-Path "$env:TEMP\wdkroot\c\Include\wdf\umdf\2.15"))) { throw 'merged WDK nuget tree incomplete' }
+        robocopy "$env:TEMP\wdkroot\c" 'C:\Program Files (x86)\Windows Kits\10' /E /NFL /NDL /NJH /NJS
+        if ($LASTEXITCODE -ge 8) { exit 1 }
+        if (-not ((Test-Path 'C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\iddcx') -and (Test-Path 'C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared'))) { throw 'Kits root overlay incomplete' }
         choco install windowsdriverkit11 -y
         if ($LASTEXITCODE -ne 0) { exit 1 }
         
@@ -53,7 +54,7 @@ jobs:
         if (Test-Path $vddSln) {
           Write-Output "Found VDD solution: $vddSln"
           Write-Output "Running MSBuild for ARM64..."
-          msbuild $vddSln /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform=ARM64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /p:WindowsSdkDir=$env:TEMP\wdkroot\c\ /p:WindowsSDKVersion=10.0.26100.0\ /verbosity:minimal
+          msbuild $vddSln /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform=ARM64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /verbosity:minimal
           if ($LASTEXITCODE -eq 0) {
             Write-Output "✅ VDD build completed successfully for ARM64"
           } else {
@@ -177,8 +178,9 @@ jobs:
         Invoke-WebRequest -Uri 'https://www.nuget.org/api/v2/package/Microsoft.Windows.WDK.x64/10.0.26100.6584' -OutFile "$env:TEMP\wdk.nupkg"
         Expand-Archive "$env:TEMP\sdk.nupkg" -DestinationPath "$env:TEMP\sdkx" -Force
         Expand-Archive "$env:TEMP\wdk.nupkg" -DestinationPath "$env:TEMP\wdkroot" -Force
-        Copy-Item "$env:TEMP\sdkx\c\*" "$env:TEMP\wdkroot\c\" -Recurse -Force
-        if (-not ((Test-Path "$env:TEMP\wdkroot\c\Include\10.0.26100.0\shared") -and (Test-Path "$env:TEMP\wdkroot\c\Include\wdf\umdf\2.15"))) { throw 'merged WDK nuget tree incomplete' }
+        robocopy "$env:TEMP\wdkroot\c" 'C:\Program Files (x86)\Windows Kits\10' /E /NFL /NDL /NJH /NJS
+        if ($LASTEXITCODE -ge 8) { exit 1 }
+        if (-not ((Test-Path 'C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\iddcx') -and (Test-Path 'C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared'))) { throw 'Kits root overlay incomplete' }
         choco install windowsdriverkit11 -y
         if ($LASTEXITCODE -ne 0) { exit 1 }
         
@@ -190,7 +192,7 @@ jobs:
         if (Test-Path $vddSln) {
           Write-Output "Found VDD solution: $vddSln"
           Write-Output "Running MSBuild for x64..."
-          msbuild $vddSln /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /p:WindowsSdkDir=$env:TEMP\wdkroot\c\ /p:WindowsSDKVersion=10.0.26100.0\ /verbosity:minimal
+          msbuild $vddSln /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /verbosity:minimal
           if ($LASTEXITCODE -eq 0) {
             Write-Output "✅ VDD build completed successfully for x64"
           } else {
