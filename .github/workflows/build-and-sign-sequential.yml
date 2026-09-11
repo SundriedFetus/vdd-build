@@ -46,7 +46,7 @@ jobs:
         if (Test-Path $vddSln) {
           Write-Output "Found VDD solution: $vddSln"
           Write-Output "Running MSBuild for ARM64..."
-          msbuild $vddSln /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform=ARM64 /verbosity:minimal
+          msbuild $vddSln /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform=ARM64 /p:WindowsTargetPlatformVersion=10.0.22000.0 /verbosity:minimal
           if ($LASTEXITCODE -eq 0) {
             Write-Output "✅ VDD build completed successfully for ARM64"
           } else {
