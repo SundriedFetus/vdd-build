@@ -31,13 +31,12 @@ jobs:
         
         
         $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -Uri 'https://download.microsoft.com/download/41fb59c2-1723-45f9-a270-96b73ad58233/KIT_BUNDLE_WDK_MEDIACREATION/wdksetup.exe' -OutFile "$env:TEMP\wdksetup.exe"
-        if ((Get-FileHash "$env:TEMP\wdksetup.exe" -Algorithm SHA256).Hash -ne 'ED82C46BD98E0F1D07FD6E5075900E42AEDC3FA5E68C06A8764B3DC5303CFF1B') { throw 'wdksetup hash mismatch' }
-        sc.exe config wuauserv start= demand
-        sc.exe start wuauserv
-        & "$env:TEMP\wdksetup.exe" /q /log "$env:TEMP\wdk-setup.log"
-        if ($LASTEXITCODE -ne 0) { Get-Content "$env:TEMP\wdk-setup.log" -Tail 60 -ErrorAction SilentlyContinue; Get-ChildItem "$env:TEMP\WDK" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 20; exit 1 }
-        if (-not (Test-Path 'C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\wudfwdm.h')) { Get-Content "$env:TEMP\wdk-setup.log" -Tail 60 -ErrorAction SilentlyContinue; throw 'WDK Kits tree missing after install' }
+        Invoke-WebRequest -Uri 'https://www.nuget.org/api/v2/package/Microsoft.Windows.SDK.CPP.x64/10.0.26100.6584' -OutFile "$env:TEMP\sdk.nupkg"
+        Invoke-WebRequest -Uri 'https://www.nuget.org/api/v2/package/Microsoft.Windows.WDK.x64/10.0.26100.6584' -OutFile "$env:TEMP\wdk.nupkg"
+        Expand-Archive "$env:TEMP\sdk.nupkg" -DestinationPath "$env:TEMP\sdkx" -Force
+        Expand-Archive "$env:TEMP\wdk.nupkg" -DestinationPath "$env:TEMP\wdkroot" -Force
+        Copy-Item "$env:TEMP\sdkx\c\*" "$env:TEMP\wdkroot\c\" -Recurse -Force
+        if (-not ((Test-Path "$env:TEMP\wdkroot\c\Include\10.0.26100.0\shared") -and (Test-Path "$env:TEMP\wdkroot\c\Include\wdf\umdf\2.15"))) { throw 'merged WDK nuget tree incomplete' }
         choco install windowsdriverkit11 -y
         if ($LASTEXITCODE -ne 0) { exit 1 }
         
@@ -54,7 +53,7 @@ jobs:
         if (Test-Path $vddSln) {
           Write-Output "Found VDD solution: $vddSln"
           Write-Output "Running MSBuild for ARM64..."
-          msbuild $vddSln /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform=ARM64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /verbosity:minimal
+          msbuild $vddSln /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform=ARM64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /p:WindowsSdkDir=$env:TEMP\wdkroot\c\ /p:WindowsSDKVersion=10.0.26100.0\ /verbosity:minimal
           if ($LASTEXITCODE -eq 0) {
             Write-Output "✅ VDD build completed successfully for ARM64"
           } else {
@@ -158,7 +157,6 @@ jobs:
 
   # Job 2: Build x64 components (VDD + VAD) - depends on ARM64 completion
   build-x64:
-    needs: build-arm64
     runs-on: windows-2022
     
     steps:
@@ -175,13 +173,12 @@ jobs:
         
         
         $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -Uri 'https://download.microsoft.com/download/41fb59c2-1723-45f9-a270-96b73ad58233/KIT_BUNDLE_WDK_MEDIACREATION/wdksetup.exe' -OutFile "$env:TEMP\wdksetup.exe"
-        if ((Get-FileHash "$env:TEMP\wdksetup.exe" -Algorithm SHA256).Hash -ne 'ED82C46BD98E0F1D07FD6E5075900E42AEDC3FA5E68C06A8764B3DC5303CFF1B') { throw 'wdksetup hash mismatch' }
-        sc.exe config wuauserv start= demand
-        sc.exe start wuauserv
-        & "$env:TEMP\wdksetup.exe" /q /log "$env:TEMP\wdk-setup.log"
-        if ($LASTEXITCODE -ne 0) { Get-Content "$env:TEMP\wdk-setup.log" -Tail 60 -ErrorAction SilentlyContinue; Get-ChildItem "$env:TEMP\WDK" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 20; exit 1 }
-        if (-not (Test-Path 'C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\wudfwdm.h')) { Get-Content "$env:TEMP\wdk-setup.log" -Tail 60 -ErrorAction SilentlyContinue; throw 'WDK Kits tree missing after install' }
+        Invoke-WebRequest -Uri 'https://www.nuget.org/api/v2/package/Microsoft.Windows.SDK.CPP.x64/10.0.26100.6584' -OutFile "$env:TEMP\sdk.nupkg"
+        Invoke-WebRequest -Uri 'https://www.nuget.org/api/v2/package/Microsoft.Windows.WDK.x64/10.0.26100.6584' -OutFile "$env:TEMP\wdk.nupkg"
+        Expand-Archive "$env:TEMP\sdk.nupkg" -DestinationPath "$env:TEMP\sdkx" -Force
+        Expand-Archive "$env:TEMP\wdk.nupkg" -DestinationPath "$env:TEMP\wdkroot" -Force
+        Copy-Item "$env:TEMP\sdkx\c\*" "$env:TEMP\wdkroot\c\" -Recurse -Force
+        if (-not ((Test-Path "$env:TEMP\wdkroot\c\Include\10.0.26100.0\shared") -and (Test-Path "$env:TEMP\wdkroot\c\Include\wdf\umdf\2.15"))) { throw 'merged WDK nuget tree incomplete' }
         choco install windowsdriverkit11 -y
         if ($LASTEXITCODE -ne 0) { exit 1 }
         
@@ -193,7 +190,7 @@ jobs:
         if (Test-Path $vddSln) {
           Write-Output "Found VDD solution: $vddSln"
           Write-Output "Running MSBuild for x64..."
-          msbuild $vddSln /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /verbosity:minimal
+          msbuild $vddSln /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /p:WindowsSdkDir=$env:TEMP\wdkroot\c\ /p:WindowsSDKVersion=10.0.26100.0\ /verbosity:minimal
           if ($LASTEXITCODE -eq 0) {
             Write-Output "✅ VDD build completed successfully for x64"
           } else {
