@@ -22,12 +22,20 @@ jobs:
         shell: cmd
         run: msbuild tools\devcon-src\devcon.vcxproj /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143 /p:WindowsTargetPlatformVersion=10.0 /m
 
+      - name: Stage built binaries
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Recurse -Filter devcon.exe | Select-Object -First 1
+          if (-not $exe) { throw 'devcon.exe not found anywhere in repo' }
+          New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\devcon-out" | Out-Null
+          Copy-Item $exe.FullName "$env:RUNNER_TEMP\devcon-out\devcon.exe"
+          Write-Host "staged from $($exe.FullName)"
+
       - name: Upload DevCon artifact
         uses: actions/upload-artifact@v4
         with:
           name: devcon-x64
           path: |
-            tools/devcon-src/x64/Release/devcon.exe
-            tools/devcon-src/x64/Release/devcon.pdb
+            ${{ runner.temp }}/devcon-out/devcon.exe
           retention-days: 3
           if-no-files-found: error
